@@ -44,6 +44,7 @@
 #include "DHT12.h"
 #include <Wire.h>     //The DHT12 uses I2C comunication.
 DHT12 dht12;          //Preset scale CELSIUS and ID 0x5c.
+#define TFT_GREY 0x5AEB
 
 String M5NSversion("2019122601");
 
@@ -89,7 +90,7 @@ int dispPage = 0;
 int maxPage = MAX_PAGE;
 
 // icon positions for the first page - WiFi/log, Snooze, Battery
-int icon_xpos[3] = {144, 144+18, 144+2*18};
+int icon_xpos[3] = {0+2*18, 0, 0+18};
 int icon_ypos[3] = {0, 0, 0};
 
 // analog clock global variables
@@ -107,7 +108,8 @@ unsigned long msStart;
 uint8_t lcdBrightness = 10;
 static char *iniFilename = "/M5NS.INI";
 
-DynamicJsonDocument JSONdoc(16384);
+DynamicJsonDocument JSONdoc(32768);
+
 time_t lastAlarmTime = 0;
 time_t lastSnoozeTime = 0;
 static uint8_t music_data[25000]; // 5s in sample rate 5000 samp/s
@@ -117,9 +119,9 @@ struct NSinfo ns;
 void setPageIconPos(int page) {
   switch(page) {
     case 0:
-      icon_xpos[0] = 144;
-      icon_xpos[1] = 144+18;
-      icon_xpos[2] = 144+2*18;
+      icon_xpos[0] = 0+2*18;
+      icon_xpos[1] = 0+18;
+      icon_xpos[2] = 0;
       icon_ypos[0] = 0;
       icon_ypos[1] = 0;
       icon_ypos[2] = 0;
@@ -389,7 +391,7 @@ void wifi_connect() {
   M5.Lcd.println("WiFi connect start");
 
   // We start by connecting to a WiFi network
-  for(int i=0; i<=9; i++) {
+  for(int i=0; i<=19; i++) {
     if(cfg.wlanssid[i][0]!=0) {
       if(cfg.wlanpass[i][0]==0) {
         // no or empty password -> send NULL
@@ -513,18 +515,35 @@ void drawMiniGraph(struct NSinfo *ns){
   int i;
   float glk;
   uint16_t sgvColor;
-  // M5.Lcd.drawLine(231, 110, 319, 110, TFT_DARKGREY);
+
+//  M5.Lcd.drawLine(0, 113, 319, 113, TFT_LIGHTGREY);
+//  M5.Lcd.drawLine(0, 203, 319, 203, TFT_LIGHTGREY);
+//  M5.Lcd.drawLine(0, 200-(4-3)*10+3, 319, 200-(4-3)*10+3, TFT_LIGHTGREY);
+//  M5.Lcd.drawLine(0, 200-(9-3)*10+3, 319, 200-(9-3)*10+3, TFT_LIGHTGREY);
+
+
+    // M5.Lcd.drawLine(231, 110, 319, 110, TFT_DARKGREY);       // (x start, y start, x finish, y finish)
   // M5.Lcd.drawLine(231, 110, 231, 207, TFT_DARKGREY);
   // M5.Lcd.drawLine(231, 207, 319, 207, TFT_DARKGREY);
   // M5.Lcd.drawLine(319, 110, 319, 207, TFT_DARKGREY);
-  M5.Lcd.drawLine(231, 113, 319, 113, TFT_LIGHTGREY);
-  M5.Lcd.drawLine(231, 203, 319, 203, TFT_LIGHTGREY);
-  M5.Lcd.drawLine(231, 200-(4-3)*10+3, 319, 200-(4-3)*10+3, TFT_LIGHTGREY);
-  M5.Lcd.drawLine(231, 200-(9-3)*10+3, 319, 200-(9-3)*10+3, TFT_LIGHTGREY);
+  M5.Lcd.drawLine(5, 120, 309, 120, TFT_RED);                                                     // TOP LINE
+//  M5.Lcd.drawLine(0, 125, 319, 125, TFT_YELLOW);                                                  // HIGH URGENT LINE
+  M5.Lcd.drawLine(0, 142, 319, 142, TFT_YELLOW);                                                   // GREEN ZONE LINE
+//  M5.Lcd.drawLine(0, 145, 319, 145, TFT_GREEN);                                                   // GREEN ZONE LINE
+  //  M5.Lcd.drawLine(0, 155, 319, 155, TFT_GREEN);                                                   // GREEN ZONE LINE
+  //  M5.Lcd.drawLine(0, 165, 319, 165, TFT_GREEN);                                                   // GREEN ZONE LINE
+  M5.Lcd.drawLine(0, 175, 319, 175, TFT_GREEN);                                                   // TARGET LINE
+  //  M5.Lcd.drawLine(0, 185, 319, 185, TFT_GREEN);                                                   // RED ZONE LINE
+  //  M5.Lcd.drawLine(0, 195, 319, 195, TFT_GREEN);                                                   // RED ZONE LINE
+  M5.Lcd.drawLine(0, 205, 319, 205, TFT_RED);                                                     // LOW LINE
+  M5.Lcd.drawLine(5, 215, 309, 215, TFT_RED);                                                 // MAGENTA ZONE LINE
+    //  M5.Lcd.drawLine(195, 223, 319, 223, TFT_MAGENTA);                                               // MAGENTA ZONE LINE  
+  //  M5.Lcd.drawLine(185, 230, 319, 230, TFT_MAGENTA);                                               // BOTTOM LINE
+  
   Serial.print("Last 10 values: ");
-  for(i=9; i>=0; i--) {
+  for(i=74; i>=0; i--) {
     sgvColor = TFT_GREEN;
-    glk = *(ns->last10sgv+9-i);
+    glk = *(ns->last10sgv+74-i);
     if(glk>12) {
       glk = 12;
     } else {
@@ -540,8 +559,8 @@ void drawMiniGraph(struct NSinfo *ns){
       }
     }
     Serial.print(*(ns->last10sgv+i)); Serial.print(" ");
-    if(*(ns->last10sgv+9-i)!=0)
-      M5.Lcd.fillCircle(234+i*9, 203-(glk-3.0)*10.0, 3, sgvColor);
+    if(*(ns->last10sgv+74-i)!=0)
+      M5.Lcd.fillCircle(4+i*4, 203-(glk-3.0)*10.0, 2, sgvColor);
   }
   Serial.println();
 }
@@ -567,7 +586,7 @@ int readNightscout(char *url, char *token, struct NSinfo *ns) {
       if(cfg.sgv_only) {
         strcat(NSurl,"/api/v1/entries.json?find[type][$eq]=sgv");
       } else {
-        strcat(NSurl,"/api/v1/entries.json");
+        strcat(NSurl,"/api/v1/entries.json?count=75");
       }
       if ((token!=NULL) && (strlen(token)>0)) {
         if(strchr(NSurl,'?'))
@@ -608,9 +627,9 @@ int readNightscout(char *url, char *token, struct NSinfo *ns) {
         // ArduinoJSON does not accept any unicode surrogate pairs like \u0032 or \u0000
         json.replace("\\u0000"," ");
         json.replace("\\u0032"," ");
-        // Serial.println(json);
-        // const size_t capacity = JSON_ARRAY_SIZE(10) + 10*JSON_OBJECT_SIZE(19) + 3840;
-        // Serial.print("JSON size needed= "); Serial.print(capacity); 
+//Serial.println(json);
+//const size_t capacity = JSON_ARRAY_SIZE(10) + 10*JSON_OBJECT_SIZE(19) + 3840;
+//Serial.print("JSON size needed= "); Serial.print(capacity); 
         Serial.print("Free Heap = "); Serial.println(ESP.getFreeHeap());
         DeserializationError JSONerr = deserializeJson(JSONdoc, json);
         Serial.println("JSON deserialized OK");
@@ -642,7 +661,7 @@ int readNightscout(char *url, char *token, struct NSinfo *ns) {
             ns->sensTime = ns->rawtime / 1000; // no milliseconds, since 2000 would be - 946684800, but ok
             strlcpy(ns->sensDir, JSONdoc[sgvindex]["direction"] | "N/A", 32);
             ns->sensSgv = JSONdoc[sgvindex]["sgv"]; // get value of sensor measurement
-            for(int i=0; i<=9; i++) {
+            for(int i=0; i<=74; i++) {
               ns->last10sgv[i]=JSONdoc[i]["sgv"];
               ns->last10sgv[i]/=18.0;
             }
@@ -653,7 +672,7 @@ int readNightscout(char *url, char *token, struct NSinfo *ns) {
             ns->sensSgv = JSONdoc["value"]; // get value of sensor measurement
             time_t tmptime = JSONdoc["x"]; // time in milliseconds since 1970
             if(ns->sensTime != tmptime) {
-              for(int i=9; i>=0; i--) { // add new value and shift buffer
+              for(int i=74; i>=0; i--) { // add new value and shift buffer
                ns->last10sgv[i]=ns->last10sgv[i-1];
               }
               ns->last10sgv[0] = ns->sensSgv;
@@ -736,9 +755,9 @@ int readNightscout(char *url, char *token, struct NSinfo *ns) {
     }
       
 
-    if(ns->is_Sugarmate)
-      return 0; // no second query if using Sugarmate
-      
+//    if(ns->is_Sugarmate)
+//      return 0; // no second query if using Sugarmate
+
     // the second query 
     if(strncmp(url, "http", 4))
       strcpy(NSurl,"https://");
@@ -1032,7 +1051,8 @@ void drawSegment(int x, int y, int r1, int r2, float a, int col)
 
 void draw_page() {
   char tmpstr[255];
-  
+
+
   M5.Lcd.setTextDatum(TL_DATUM);
   M5.Lcd.setTextColor(WHITE, BLACK);
   M5.Lcd.setTextSize(1);
@@ -1040,9 +1060,11 @@ void draw_page() {
 
   switch(dispPage) {
     case 0: {
+
+      //edit page
       // if there was an error, then clear whole screen, otherwise only graphic updated part
       // M5.Lcd.fillScreen(BLACK);
-      // M5.Lcd.fillRect(230, 110, 90, 100, TFT_BLACK);
+      // M5.Lcd.fillRect(230, 113, 90, 100, TFT_BLACK);
       
       // readNightscout(cfg.url, cfg.token, &ns);
 
@@ -1055,28 +1077,32 @@ void draw_page() {
       // char timeStr[30];
       // sprintf(timeStr, "%02d:%02d:%02d", sensTm.tm_hour, sensTm.tm_min, sensTm.tm_sec);
       // M5.Lcd.drawString(timeStr, 0, 72, GFXFF);
+        // show small delta right from name
+
       char datetimeStr[30];
       struct tm timeinfo;
-      if(cfg.show_current_time) {
-        if(getLocalTime(&timeinfo)) {
-          // sprintf(datetimeStr, "%02d:%02d:%02d  %d.%d.  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon+1);  
+ 
+//      if(cfg.show_current_time) {
+//        if(getLocalTime(&timeinfo)) {
+ //         // sprintf(datetimeStr, "%02d:%02d:%02d  %d.%d.  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec, timeinfo.tm_mday, timeinfo.tm_mon+1);  
           // timeinfo.tm_mday=24; timeinfo.tm_mon=11;
-          switch(cfg.date_format) {
-            case 1:
-              sprintf(datetimeStr, "%02d:%02d  %d/%d  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_mon+1, timeinfo.tm_mday);
-              break;
-            default:
-              sprintf(datetimeStr, "%02d:%02d  %d.%d.  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_mday, timeinfo.tm_mon+1);  
-          }
-        } else {
+//          switch(cfg.date_format) {
+//            case 1:
+              //sprintf(datetimeStr, "%02d:%02d  %d/%d  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_mon+1, timeinfo.tm_mday);
+//              break;
+//            default:
+              //sprintf(datetimeStr, "%02d:%02d  %d.%d.  ", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_mday, timeinfo.tm_mon+1);  
+//          }
+//        } else {
           // strcpy(datetimeStr, "??:??:??");
-          strcpy(datetimeStr, "??:??");
-        }
-      } else {
+          //strcpy(datetimeStr, "??:??");
+//        }
+//      } else {
         // sprintf(datetimeStr, "%02d:%02d:%02d  %d.%d.  ", sensTm.tm_hour, sensTm.tm_min, sensTm.tm_sec, sensTm.tm_mday, sensTm.tm_mon+1);
-        sprintf(datetimeStr, "%02d:%02d  %d.%d.  ", ns.sensTm.tm_hour, ns.sensTm.tm_min, ns.sensTm.tm_mday, ns.sensTm.tm_mon+1);
-      }
-      M5.Lcd.drawString(datetimeStr, 0, 0, GFXFF);
+        //sprintf(datetimeStr, "%02d:%02d  %d.%d.  ", ns.sensTm.tm_hour, ns.sensTm.tm_min, ns.sensTm.tm_mday, ns.sensTm.tm_mon+1);
+//      }
+//      M5.Lcd.drawString(datetimeStr, 0, 100, GFXFF);
+
 
       drawBatteryStatus(icon_xpos[2], icon_ypos[2]);
       
@@ -1089,7 +1115,40 @@ void draw_page() {
       }
               
       M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-      M5.Lcd.drawString(cfg.userName, 0, 24, GFXFF);
+
+      // calculate sensor time difference
+      int sensorDifSec=0;
+      if(!getLocalTime(&timeinfo)){
+        sensorDifSec=24*60*60; // too much
+      } else {
+        Serial.print("Local time: "); Serial.print(timeinfo.tm_hour); Serial.print(":"); Serial.print(timeinfo.tm_min); Serial.print(":"); Serial.print(timeinfo.tm_sec); Serial.print(" DST "); Serial.println(timeinfo.tm_isdst);
+        sensorDifSec=difftime(mktime(&timeinfo), ns.sensTime);
+      }
+      Serial.print("Sensor time difference = "); Serial.print(sensorDifSec); Serial.println(" sec");
+      unsigned int sensorDifMin = (sensorDifSec+30)/60;
+      uint16_t tdColor = TFT_LIGHTGREY;
+      if(sensorDifMin>5) {
+        tdColor = TFT_LIGHTGREY;
+        if(sensorDifMin>15) {
+          tdColor = TFT_RED;
+        }
+      }
+      
+      M5.Lcd.setFreeFont(FSSB12);
+      M5.Lcd.setTextSize(1);
+      M5.Lcd.setTextColor(tdColor, TFT_BLACK);   
+      M5.Lcd.drawString("L:", 0, 24, GFXFF);
+      M5.Lcd.drawNumber(sensorDifMin, 30, 24, GFXFF);
+
+      if (sensorDifMin >= 10) {
+        M5.Lcd.drawString("min", 70, 24, GFXFF);
+      }
+      else {
+        M5.Lcd.drawString("min", 50, 24, GFXFF);
+      }
+
+//Rectangle
+      M5.Lcd.fillRoundRect(140,0,180,90,15,TFT_GREY);    
       
       if(cfg.show_COB_IOB) {
         M5.Lcd.setFreeFont(FSSB12);
@@ -1103,7 +1162,7 @@ void draw_page() {
         M5.Lcd.drawString(ns.delta_display, 130, 24, GFXFF);
         */
         
-        M5.Lcd.fillRect(0,48,199,47,TFT_BLACK);
+//        M5.Lcd.fillRect(0,48,199,47,TFT_BLACK);
         if(ns.iob>0)
           M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
         else
@@ -1127,59 +1186,30 @@ void draw_page() {
         }
         M5.Lcd.drawString(tmpstr, 0, 72, GFXFF);
 
+
+
         // show BIG delta bellow the name
-        M5.Lcd.setFreeFont(FSSB24);
+        M5.Lcd.setFreeFont(FSSB12);
         // strcpy(ns.delta_display, "+8.9");
         if(ns.delta_mgdl>7)
-          M5.Lcd.setTextColor(TFT_WHITE, BLACK);
+          M5.Lcd.setTextColor(TFT_WHITE);
         else
-          M5.Lcd.setTextColor(TFT_LIGHTGREY, BLACK);
-        M5.Lcd.drawString(ns.delta_display, 103, 48, GFXFF);
+          M5.Lcd.setTextColor(TFT_WHITE);
+        M5.Lcd.drawString(ns.delta_display, 145, 5, GFXFF);
         M5.Lcd.setFreeFont(FSSB12);
 
       } else {
         // show BIG delta bellow the name
-        M5.Lcd.setFreeFont(FSSB24);
-        M5.Lcd.setTextColor(TFT_LIGHTGREY, BLACK);
+        M5.Lcd.setFreeFont(FSSB12);
+        M5.Lcd.setTextColor(TFT_WHITE);
         M5.Lcd.setTextSize(1);
-        M5.Lcd.fillRect(0,48+10,199,47,TFT_BLACK);
-        M5.Lcd.drawString(ns.delta_display, 0, 48+10, GFXFF);
+//        M5.Lcd.fillRect(0,48+10,199,47,TFT_BLACK);
+        M5.Lcd.drawString(ns.delta_display, 0, 5+10, GFXFF);
         M5.Lcd.setFreeFont(FSSB12);
       }
-
-      // calculate sensor time difference
-      int sensorDifSec=0;
-      if(!getLocalTime(&timeinfo)){
-        sensorDifSec=24*60*60; // too much
-      } else {
-        Serial.print("Local time: "); Serial.print(timeinfo.tm_hour); Serial.print(":"); Serial.print(timeinfo.tm_min); Serial.print(":"); Serial.print(timeinfo.tm_sec); Serial.print(" DST "); Serial.println(timeinfo.tm_isdst);
-        sensorDifSec=difftime(mktime(&timeinfo), ns.sensTime);
-      }
-      Serial.print("Sensor time difference = "); Serial.print(sensorDifSec); Serial.println(" sec");
-      unsigned int sensorDifMin = (sensorDifSec+30)/60;
-      uint16_t tdColor = TFT_LIGHTGREY;
-      if(sensorDifMin>5) {
-        tdColor = TFT_WHITE;
-        if(sensorDifMin>15) {
-          tdColor = TFT_RED;
-        }
-      }
-
-      M5.Lcd.fillRoundRect(200,0,120,90,15,tdColor);
-      M5.Lcd.setTextSize(1);
-      M5.Lcd.setFreeFont(FSSB24);
-      M5.Lcd.setTextDatum(MC_DATUM);
-      M5.Lcd.setTextColor(TFT_BLACK, tdColor);
-      if(sensorDifMin>99) {
-        M5.Lcd.drawString("Err", 260, 32, GFXFF);
-      } else {
-        M5.Lcd.drawNumber(sensorDifMin, 260, 32, GFXFF);
-      }
-      M5.Lcd.setTextSize(1);
-      M5.Lcd.setFreeFont(FSSB12);
-      M5.Lcd.setTextDatum(MC_DATUM);
-      M5.Lcd.setTextColor(TFT_BLACK, tdColor);
-      M5.Lcd.drawString("min", 260, 70, GFXFF);
+  
+      
+      
       
       uint16_t glColor = TFT_GREEN;
       if(ns.sensSgv<cfg.yellow_low || ns.sensSgv>cfg.yellow_high) {
@@ -1191,11 +1221,11 @@ void draw_page() {
     
       sprintf(tmpstr, "Glyk: %4.1f %s", ns.sensSgv, ns.sensDir);
       Serial.println(tmpstr);
-      
+ //test    
       M5.Lcd.fillRect(0, 110, 320, 114, TFT_BLACK);
       M5.Lcd.setTextSize(2);
       M5.Lcd.setTextDatum(TL_DATUM);
-      M5.Lcd.setTextColor(glColor, TFT_BLACK);
+      M5.Lcd.setTextColor(glColor);
       char sensSgvStr[30];
       int smaller_font = 0;
       if( cfg.show_mgdl ) {
@@ -1208,20 +1238,30 @@ void draw_page() {
       // Serial.print("SGV string length = "); Serial.print(strlen(sensSgvStr));
       // Serial.print(", smaller_font = "); Serial.println(smaller_font);
       if( smaller_font ) {
+        //above 10
         M5.Lcd.setFreeFont(FSSB18);
-        M5.Lcd.drawString(sensSgvStr, 0, 130, GFXFF);
+        M5.Lcd.drawString(sensSgvStr, 160, 33, GFXFF);
       } else {
-        M5.Lcd.setFreeFont(FSSB24);
-        M5.Lcd.drawString(sensSgvStr, 0, 120, GFXFF);
+        //below 10
+        M5.Lcd.setFreeFont(FSSB18);
+        M5.Lcd.drawString(sensSgvStr, 160, 33, GFXFF);
       }
       int tw=M5.Lcd.textWidth(sensSgvStr);
       int th=M5.Lcd.fontHeight(GFXFF);
-      // Serial.print("textWidth="); Serial.println(tw);
-      // Serial.print("textHeight="); Serial.println(th);
-    
+
+      int ay=0;
+
+      if(ns.arrowAngle>=45)
+        ay=4;
+      else
+        if(ns.arrowAngle>-45)
+          ay=18;
+        else
+          ay=30;
+
+ // arrow   
       if(ns.arrowAngle!=180)
-        drawArrow(0+tw+25, 120+40, 10, ns.arrowAngle+85, 40, 40, glColor);
-    
+        drawArrow(280, ay, 10, ns.arrowAngle+85, 25, 25, glColor);
       /*
       // draw help lines
       for(int i=0; i<320; i+=40) {
@@ -1296,7 +1336,7 @@ void draw_page() {
       } else {
         sprintf(datetimeStr, "%02d:%02d", ns.sensTm.tm_hour, ns.sensTm.tm_min);
       }
-      M5.Lcd.drawString(datetimeStr, 0, 0, GFXFF);
+//      M5.Lcd.drawString(datetimeStr, 0, 0, GFXFF);
       
       M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
       M5.Lcd.drawString(ns.delta_display, 180, 0, GFXFF);
@@ -1848,7 +1888,7 @@ void loop(){
       if(lastMin!=localTimeInfo.tm_min) {
         lastSec=localTimeInfo.tm_sec;
         lastMin=localTimeInfo.tm_min;
-        M5.Lcd.drawString(localTimeStr, 0, 0, GFXFF);
+        //M5.Lcd.drawString(localTimeStr, 0, 0, GFXFF);
       }
     }
     if(dispPage==2) {
